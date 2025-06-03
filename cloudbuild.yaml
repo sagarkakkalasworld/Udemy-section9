@@ -1,6 +1,10 @@
 substitutions:
   _AWS_PRIVATE_IP: "172.31.31.45"
 
+
+options:
+  logging: CLOUD_LOGGING_ONLY  
+
 steps:
 # Step 1: Setup SSH Key
 - name: 'gcr.io/cloud-builders/gcloud'
