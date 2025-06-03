@@ -25,7 +25,7 @@ steps:
   args:
     - '-c'
     - |
-      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP << 'EOF'
+      ssh i "$$SSH_KEY" -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP << 'EOF'
         rm -rf /home/ubuntu/Udemy-section*
         git clone https://github.com/sagarkakkalasworld/Udemy-section9
         cd Udemy-section9
