@@ -1,0 +1,58 @@
+substitutions:
+  _AWS_PRIVATE_IP: "172.31.31.45"
+
+steps:
+# Step 1: Setup SSH Key
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'Setup SSH'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      mkdir -p ~/.ssh
+      echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+      chmod 600 ~/.ssh/id_rsa
+      ssh-keyscan -H "$_AWS_PRIVATE_IP" >> ~/.ssh/known_hosts
+  secretEnv: ['SSH_KEY']
+
+# Step 2: Pre-Requisites (clone repo + set permissions)
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'Run Pre-Requisites'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP << 'EOF'
+        rm -rf /home/ubuntu/Udemy-section*
+        git clone 
+        cd Udemy-section9
+        chmod 744 build.sh
+        chmod 744 deploy.sh
+      EOF
+  secretEnv: ['SSH_KEY']
+
+# Step 3: Build
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'Build App'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP "bash /home/ubuntu/Udemy-section9/build.sh"
+  secretEnv: ['SSH_KEY']
+
+# Step 4: Deploy
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'Deploy App'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP "bash /home/ubuntu/Udemy-section9/deploy.sh"
+  secretEnv: ['SSH_KEY']
+
+# Define secret for SSH_KEY
+availableSecrets:
+  secretManager:
+    - versionName: projects/YOUR_PROJECT_ID/secrets/SSH_KEY/versions/latest
+      env: 'SSH_KEY'
