@@ -19,6 +19,21 @@ steps:
       ssh-keyscan -H "$_AWS_PRIVATE_IP" >> ~/.ssh/known_hosts
   secretEnv: ['SSH_KEY']
 
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'Run Pre-Requisites'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP << 'EOF'
+        rm -rf /home/ubuntu/Udemy-section*
+        git clone https://github.com/sagarkakkalasworld/Udemy-section9
+        cd Udemy-section9
+        chmod 744 build.sh
+        chmod 744 deploy.sh
+      EOF
+  secretEnv: ['SSH_KEY']
+
 
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'Debug SSH Key'
