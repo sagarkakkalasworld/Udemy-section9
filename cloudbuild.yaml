@@ -24,7 +24,7 @@ steps:
     - |
       ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP << 'EOF'
         rm -rf /home/ubuntu/Udemy-section*
-        git clone 
+        git clone https://github.com/sagarkakkalasworld/Udemy-section9
         cd Udemy-section9
         chmod 744 build.sh
         chmod 744 deploy.sh
