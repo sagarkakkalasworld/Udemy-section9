@@ -58,5 +58,5 @@ steps:
 # Define secret for SSH_KEY
 availableSecrets:
   secretManager:
-    - versionName: projects/projects/still-resource-322404/secrets/SSH_KEY/versions/latest/secrets/SSH_KEY/versions/latest
+    - versionName: projects/still-resource-322404/secrets/SSH_KEY/versions/latest
       env: 'SSH_KEY'
