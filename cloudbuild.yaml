@@ -28,6 +28,10 @@ steps:
     - '-c'
     - |
       set -ex
+      mkdir -p /root/.ssh
+      echo "$$SSH_KEY" | tr -d '\r' > /root/.ssh/id_rsa
+      chmod 777 /root/.ssh/id_rsa
+      ssh-keyscan -H "$_AWS_PRIVATE_IP" >> /root/.ssh/known_hosts
       ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP << 'EOF'
         rm -rf /home/ubuntu/Udemy-section*
         git clone https://github.com/sagarkakkalasworld/Udemy-section9
