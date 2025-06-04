@@ -1,5 +1,5 @@
 substitutions:
-  _AWS_PRIVATE_IP: "13.56.249.248"
+  _AWS_PRIVATE_IP: "172.31.31.45"
 
 
 options:
