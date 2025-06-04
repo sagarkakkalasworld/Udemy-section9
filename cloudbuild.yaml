@@ -20,8 +20,8 @@ steps:
         rm -rf /home/ubuntu/Udemy-section*
         git clone https://github.com/sagarkakkalasworld/Udemy-section9
         cd Udemy-section9
-        chmod 744 build.sh
-        chmod 744 deploy.sh
+        chmod 744 /home/ubuntu/Udemy-section9/build.sh
+        chmod 744 /home/ubuntu/Udemy-section9/deploy.sh
       EOF
   secretEnv: ['SSH_KEY']
 
