@@ -39,7 +39,6 @@ steps:
       ssh-keyscan -H "$_AWS_PRIVATE_IP" >> /root/.ssh/known_hosts
       ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP "bash /home/ubuntu/Udemy-section9/build.sh"
   secretEnv: ['SSH_KEY']
-  volumes:
 
 
 # Step 4: Deploy App
