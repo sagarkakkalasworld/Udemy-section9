@@ -1,214 +1,157 @@
-# Azure Pipelines – Using AWS EC2 as a Self-Hosted Runner
+# 🚀 GCP Cloud Build Pipelines with AWS EC2 as Deployment Target
 
-This guide walks you through setting up an Azure DevOps pipeline that builds and deploys on an **AWS EC2 instance** using it as a **self-hosted agent**.
-
----
-
-## 🔧 Step 1: Azure DevOps Setup
-
-1. **Sign in to Azure** and search for **Azure DevOps**.
-2. **Create an Organization** (make it public if required).
-3. Inside the organization, **create a Project** – this will be your actual repository.
-4. We’ll use **Azure Pipelines only**, but the runner and deployment server will be on **AWS EC2**.
+This guide walks you through setting up **GCP Cloud Build** to build and deploy code onto an **AWS EC2 instance** using SSH.
 
 ---
 
-## 🔐 Step 2: AWS Prerequisites
+## 🌐 Step 1: GCP Project & Cloud Build Setup
 
-- Ensure **two EC2 instances** are set up:
-  - One as the **self-hosted runner**
-  - One as the **deployment server**
-- These two instances should be connected via **SSH**.
+1. Log in to your [Google Cloud Console](https://console.cloud.google.com/).
+2. Search for **“Cloud Build”**.
+3. Click **Enable** to activate the API.
 
----
-
-## 🔑 Step 3: Create Personal Access Token (PAT)
-
-1. Click on the ⚙️ **settings icon** beside your profile picture.
-2. Go to **"Personal Access Tokens"**.
-3. Generate a token with the following scopes:
-   - **Agent Pools** → Read & Manage
-   - **Code** → Read & Write
+> 💳 You'll need to verify **billing** with a **credit card** and **government ID**.  
+> 🕒 Billing activation may take up to **24 hours**.
 
 ---
 
-## 🤖 Step 4: Set Up Self-Hosted Agent on EC2
+## 🔗 Step 2: Connect GitHub Repository
 
-1. Go to your Azure DevOps **Project Settings → Agent Pools → Add Pool**
-2. Name it (e.g., `aws ec2`) and **create the pool**.
-3. Click **“Add Agent”**, select **Linux**, and follow the instructions.
-4. SSH into your EC2 instance and run the following:
-
-```bash
-mkdir myagent && cd myagent
-curl -O https://download.agent.dev.azure.com/agent/4.255.0/vsts-agent-linux-x64-4.255.0.tar.gz
-tar xzvf vsts-agent-linux-x64-4.255.0.tar.gz
-./config.sh
-```
-
-- Enter the URL: `https://dev.azure.com/<your_organization_name>`
-- Use the **PAT token** for authentication
-- Enter the **pool name** and an **agent name**
-
-Start the agent:
-
-```bash
-./run.sh
-```
+1. In **Cloud Build**, go to the **Triggers** tab.
+2. Click **"Connect Repository"**.
+3. Choose **GitHub**, then authenticate using the same browser session.
+4. Complete **two-factor authentication**, if prompted.
+5. Select the repository you'd like to integrate.
 
 ---
 
-## 🔐 Step 5: Add SSH Key to Azure DevOps
+## 🔐 Step 3: Add SSH Key to Secret Manager
 
-1. Go to **Pipelines → Library → Variable Groups**
-2. Create a new group (e.g., `test`)
-3. Add variable:
-   - **Name:** `SSH_KEY`
-   - **Value:** Paste your private SSH key content
-   - Enable **Keep this value secret**
+1. Go to **Secret Manager** in GCP.
+2. Create a new secret:
+   - **Name**: `SSH_KEY`
+   - **Value**: Paste your **private SSH key**
+3. After creating the secret, note the **Project ID** for later.
 
 ---
 
-## 🚀 Step 6: Create Azure Pipeline
+## ⚙️ Step 4: Configure Cloud Build Trigger
 
-Assuming your Azure repo already has a `azure-pipelines.yml` file:
+1. Go back to **Cloud Build → Triggers**.
+2. Click **"Create Trigger"**.
+3. Use the following settings:
+   - **Event**: Push to branch (e.g., `main`)
+   - **Repo**: Your GitHub repo
+   - **Build Config**: `cloudbuild.yaml`
 
-- Go to **Pipelines → Create Pipeline**
-- Select **Azure Repos**
-- Pick your repo
-- Choose **Existing YAML file**
+> ⚠️ Triggers act like webhooks — the pipeline runs on each code push.
 
-### Example `azure-pipelines.yml`
+---
+
+## 📄 Step 5: Sample `cloudbuild.yaml`
 
 ```yaml
-trigger:
-  branches:
-    include:
-      - master
+substitutions:
+  _AWS_PUBLIC_IP: "54.183.217.216"
 
-variables:
-- group: test
-- name: AWS_PRIVATE_IP
-  value: '172.31.31.45'
+options:
+  logging: CLOUD_LOGGING_ONLY
 
-stages:
-- stage: PreRequisites
-  displayName: 'Pre-requisites'
-  jobs:
-  - job: PreReqJob
-    displayName: 'Prepare the EC2 Instance'
-    pool:
-      name: 'aws ec2'
-      demands:
-        - agent.name -equals cicd
-    steps:
-    - script: |
-        mkdir -p ~/.ssh
-        echo "$SSH_key" | tr -d '\r' > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H $(AWS_PRIVATE_IP) >> ~/.ssh/known_hosts
-      displayName: 'Setup SSH Key'
-      env:
-        SSH_key: $(SSH_KEY)
-
-    - script: |
-        ssh -o StrictHostKeyChecking=no ubuntu@$(AWS_PRIVATE_IP) << 'EOF'
-        rm -rf /home/ubuntu/Udemy-section*
-        git clone https://<your-username>@dev.azure.com/<org>/<project>/_git/<repo>
-        cd <your-cloned-folder>
-        chmod 744 build.sh
-        chmod 744 deploy.sh
+steps:
+  # Step 1: Pre-Requisites
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Run Pre-Requisites'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mkdir -p /root/.ssh
+        echo "$$SSH_KEY" | tr -d '\r' > /root/.ssh/id_rsa
+        chmod 600 /root/.ssh/id_rsa
+        ssh-keyscan -H "$_AWS_PUBLIC_IP" >> /root/.ssh/known_hosts
+        ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PUBLIC_IP << 'EOF'
+          rm -rf /home/ubuntu/Udemy-section*
+          git clone https://github.com/sagarkakkalasworld/Udemy-section9
+          cd Udemy-section9
+          chmod 744 build.sh
+          chmod 744 deploy.sh
         EOF
-      displayName: 'Run Pre-Requisites'
+    secretEnv: ['SSH_KEY']
 
-- stage: Build
-  dependsOn: PreRequisites
-  jobs:
-  - job: BuildJob
-    displayName: 'Run Build Script on EC2'
-    pool:
-      name: 'aws ec2'
-      demands:
-        - agent.name -equals cicd
-    steps:
-    - script: |
-        mkdir -p ~/.ssh
-        echo "$SSH_key" | tr -d '\r' > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H $(AWS_PRIVATE_IP) >> ~/.ssh/known_hosts
-      displayName: 'Setup SSH Key'
-      env:
-        SSH_key: $(SSH_KEY)
+  # Step 2: Build App
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Build App'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mkdir -p /root/.ssh
+        echo "$$SSH_KEY" | tr -d '\r' > /root/.ssh/id_rsa
+        chmod 600 /root/.ssh/id_rsa
+        ssh-keyscan -H "$_AWS_PUBLIC_IP" >> /root/.ssh/known_hosts
+        ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PUBLIC_IP "bash /home/ubuntu/Udemy-section9/build.sh"
+    secretEnv: ['SSH_KEY']
 
-    - script: |
-        ssh -o StrictHostKeyChecking=no ubuntu@$(AWS_PRIVATE_IP) "bash /home/ubuntu/<repo>/build.sh"
-      displayName: 'Build App'
+  # Step 3: Deploy App
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Deploy App'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mkdir -p /root/.ssh
+        echo "$$SSH_KEY" | tr -d '\r' > /root/.ssh/id_rsa
+        chmod 600 /root/.ssh/id_rsa
+        ssh-keyscan -H "$_AWS_PUBLIC_IP" >> /root/.ssh/known_hosts
+        ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PUBLIC_IP "bash /home/ubuntu/Udemy-section9/deploy.sh"
+    secretEnv: ['SSH_KEY']
 
-- stage: Deploy
-  dependsOn: Build
-  jobs:
-  - job: DeployJob
-    displayName: 'Run Deploy Script on EC2'
-    pool:
-      name: 'aws ec2'
-      demands:
-        - agent.name -equals cicd
-    steps:
-    - script: |
-        mkdir -p ~/.ssh
-        echo "$SSH_key" | tr -d '\r' > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H $(AWS_PRIVATE_IP) >> ~/.ssh/known_hosts
-      displayName: 'Setup SSH Key'
-      env:
-        SSH_key: $(SSH_KEY)
-
-    - script: |
-        ssh -o StrictHostKeyChecking=no ubuntu@$(AWS_PRIVATE_IP) "bash /home/ubuntu/<repo>/deploy.sh"
-      displayName: 'Deploy App'
-```
+availableSecrets:
+  secretManager:
+    - versionName: projects/381798847413/secrets/SSH_KEY/versions/latest
+      env: 'SSH_KEY'
+````
 
 ---
 
-## ✅ Optional: Manual Approval Before Deploy
+## 📌 Notes
 
-Uncomment below if you want **manual approval**:
+* Replace `381798847413` and `SSH_KEY` with your actual **GCP project ID** and **secret name**.
+* This guide uses **public IP** of the EC2 instance since:
 
-```yaml
-# - stage: Deploy
-#   dependsOn: Build
-#   jobs:
-#   - deployment: DeployJob
-#     displayName: 'Run Deploy Script on EC2'
-#     environment: production
-#     pool:
-#       name: 'aws ec2'
-#       demands:
-#         - agent.name -equals cicd
-#     strategy:
-#       runOnce:
-#         deploy:
-#           steps:
-#             ...
-```
+  * Cloud Build runs in **ephemeral containers**, not in your AWS VPC.
+  * Private IPs require **VPC peering**, which is more complex.
 
 ---
 
-## ✅ Summary
+## ▶️ Step 6: Run the Trigger
 
-You’ve now successfully:
-
-- Set up an Azure DevOps organization and project
-- Connected an AWS EC2 instance as a self-hosted runner
-- Created a multi-stage pipeline with SSH key management
-- Built and deployed code using shell scripts from Azure Pipelines
+1. Go to **Cloud Build → Triggers**.
+2. Click **“Run”** to manually test or push code to the branch.
 
 ---
 
-## 🔗 Connect with Me
+## ✅ IAM Permissions
 
-I post content related to contrafactums, fun vlogs, travel stories, DevOps and more.
+Make sure the **Cloud Build Service Account** has these roles:
 
-👉 [Sagar Kakkala One Stop](https://linktr.ee/sagar_kakkalas_world)
+* `Secret Manager Secret Accessor`
+* `Cloud Build Editor`
 
-🖊 Feedback, queries, and suggestions are welcome in the comments.
+Assign them via **IAM & Admin → IAM** in the console.
+
+---
+
+## 🙌 Connect With Me
+
+I create content on:
+
+* DevOps
+* Fun Vlogs
+* Travel Stories
+* Contrafactums 🎶
+
+📎 All my platforms:
+👉 [Sagar Kakkala – One Stop](https://linktr.ee/sagar_kakkalas_world)
+
+🖊 Feedback, queries, and suggestions are welcome in the comments!
