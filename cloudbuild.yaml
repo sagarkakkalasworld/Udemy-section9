@@ -19,13 +19,14 @@ steps:
       ssh-keyscan -H "$_AWS_PRIVATE_IP" >> ~/.ssh/known_hosts
   secretEnv: ['SSH_KEY']
 
-# Step 2: Pre-Requisites (clone repo + set permissions)
+# Step 2: Pre-Requisit (clone repo + set permissions)
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'Run Pre-Requisi'
   entrypoint: 'bash'
   args:
     - '-c'
     - |
+      rm -rf ~/.ssh
       mkdir -p ~/.ssh
       echo "$$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
       chmod 600 ~/.ssh/id_rsa
