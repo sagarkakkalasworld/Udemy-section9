@@ -1,5 +1,5 @@
 substitutions:
-  _AWS_PRIVATE_IP: "172.31.31.45"
+  _AWS_PUBLIC_IP: "54.183.217.216"
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -16,7 +16,7 @@ steps:
       echo "$$SSH_KEY" | tr -d '\r' > /root/.ssh/id_rsa
       chmod 600 /root/.ssh/id_rsa
       ssh-keyscan -H "$_AWS_PRIVATE_IP" >> /root/.ssh/known_hosts
-      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP << 'EOF'
+      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PUBLIC_IP << 'EOF'
         rm -rf /home/ubuntu/Udemy-section*
         git clone https://github.com/sagarkakkalasworld/Udemy-section9
         cd Udemy-section9
@@ -37,7 +37,7 @@ steps:
       echo "$$SSH_KEY" | tr -d '\r' > /root/.ssh/id_rsa
       chmod 600 /root/.ssh/id_rsa
       ssh-keyscan -H "$_AWS_PRIVATE_IP" >> /root/.ssh/known_hosts
-      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP "bash /home/ubuntu/Udemy-section9/build.sh"
+      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PUBLIC_IP "bash /home/ubuntu/Udemy-section9/build.sh"
   secretEnv: ['SSH_KEY']
 
 
@@ -52,7 +52,7 @@ steps:
       echo "$$SSH_KEY" | tr -d '\r' > /root/.ssh/id_rsa
       chmod 600 /root/.ssh/id_rsa
       ssh-keyscan -H "$_AWS_PRIVATE_IP" >> /root/.ssh/known_hosts
-      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP "bash /home/ubuntu/Udemy-section9/deploy.sh"
+      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PUBLIC_IP "bash /home/ubuntu/Udemy-section9/deploy.sh"
   secretEnv: ['SSH_KEY']
 
 
