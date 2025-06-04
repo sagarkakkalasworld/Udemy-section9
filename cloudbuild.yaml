@@ -1,5 +1,5 @@
 substitutions:
-  _AWS_PRIVATE_IP: "54.183.217.216"
+  _AWS_PRIVATE_IP: "172.31.31.45"
 
 options:
   logging: CLOUD_LOGGING_ONLY
