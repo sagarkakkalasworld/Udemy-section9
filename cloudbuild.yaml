@@ -1,5 +1,5 @@
 substitutions:
-  _AWS_PUBLIC_IP: "54.183.217.216"
+  _AWS_PUBLIC_IP: "54.215.114.244"
 
 options:
   logging: CLOUD_LOGGING_ONLY
