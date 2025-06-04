@@ -15,42 +15,8 @@ steps:
     - |
       mkdir -p ~/.ssh
       echo "$$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-      chmod 600 ~/.ssh/id_rsa
+      chmod 777 ~/.ssh/id_rsa
       ssh-keyscan -H "$_AWS_PRIVATE_IP" >> ~/.ssh/known_hosts
-  secretEnv: ['SSH_KEY']
-
-# Step 2: Pre-Requisit (clone repo + set permissions)
-- name: 'gcr.io/cloud-builders/gcloud'
-  id: 'Run Pre-Requisi'
-  entrypoint: 'bash'
-  args:
-    - '-c'
-    - |
-      rm -rf ~/.ssh
-      mkdir -p ~/.ssh
-      echo "$$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-      chmod 600 ~/.ssh/id_rsa
-      ssh-keyscan -H "$$_AWS_PRIVATE_IP" >> ~/.ssh/known_hosts
-
-      ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP << 'EOF'
-        rm -rf /home/ubuntu/Udemy-section*
-        git clone https://github.com/sagarkakkalasworld/Udemy-section9
-        cd Udemy-section9
-        chmod 744 build.sh
-        chmod 744 deploy.sh
-      EOF
-  secretEnv: ['SSH_KEY']
-
-
-
-- name: 'gcr.io/cloud-builders/gcloud'
-  id: 'Debug SSH Key'
-  entrypoint: 'bash'
-  args:
-    - '-c'
-    - |
-      echo "First 3 lines of SSH key:"
-      head -3 ~/.ssh/id_rsa
   secretEnv: ['SSH_KEY']
 
 
