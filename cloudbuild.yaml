@@ -18,9 +18,7 @@ steps:
       chmod 600 /root/.ssh/id_rsa
       ssh-keyscan -H "$_AWS_PRIVATE_IP" >> /root/.ssh/known_hosts
   secretEnv: ['SSH_KEY']
-  volumes:
-    - name: ssh
-      path: /root/.ssh
+
 
 # Step 2: Pre-Requisites (clone repo + set permissions)
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -38,9 +36,7 @@ steps:
         chmod 744 deploy.sh
       EOF
   secretEnv: ['SSH_KEY']
-  volumes:
-    - name: ssh
-      path: /root/.ssh
+
 
 # Step 3: Build App
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -53,8 +49,7 @@ steps:
       ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP "bash /home/ubuntu/Udemy-section9/build.sh"
   secretEnv: ['SSH_KEY']
   volumes:
-    - name: ssh
-      path: /root/.ssh
+
 
 # Step 4: Deploy App
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -66,28 +61,8 @@ steps:
       set -ex
       ssh -o StrictHostKeyChecking=no ubuntu@$_AWS_PRIVATE_IP "bash /home/ubuntu/Udemy-section9/deploy.sh"
   secretEnv: ['SSH_KEY']
-  volumes:
-    - name: ssh
-      path: /root/.ssh
 
-# Optional: Debug SSH Key
-- name: 'gcr.io/cloud-builders/gcloud'
-  id: 'Debug SSH Key'
-  entrypoint: 'bash'
-  args:
-    - '-c'
-    - |
-      echo "First 3 lines of SSH key:"
-      head -3 /root/.ssh/id_rsa
-  secretEnv: ['SSH_KEY']
-  volumes:
-    - name: ssh
-      path: /root/.ssh
 
-# Define shared volume for SSH
-volumes:
-  - name: ssh
-    path: /root/.ssh
 
 availableSecrets:
   secretManager:
