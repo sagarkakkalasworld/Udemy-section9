@@ -15,7 +15,7 @@ steps:
     - |
       mkdir -p ~/.ssh
       echo "$$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-      chmod 777 ~/.ssh/id_rsa
+      chmod -R 777 ~/.ssh/id_rsa
       ssh-keyscan -H "$_AWS_PRIVATE_IP" >> ~/.ssh/known_hosts
   secretEnv: ['SSH_KEY']
 
